@@ -1,0 +1,570 @@
+---
+title: "Project"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+The dataset is from Kaggle:
+https://www.kaggle.com/c/prudential-life-insurance-assessment/data
+.	The dataset contains about 128 features 
+.	The feature called as Response is the response variable
+.	These features describe attributes of life insurance applicants
+.	I am trying to find the Response of the applicants
+.	It is an ordinal measure of risk and has 8 levels
+
+1. Import train data
+```{r}
+train.data <- read.csv("C:/Users/vaish/Documents/DM in R/Project/train.csv")
+
+str(train.data)
+head(train.data)
+
+plot(train.data$Response)
+#this shows the 8 levels of data in training set
+
+#Few features seems to be normalised, I havent shown it for every feature
+hist(train.data$Product_Info_4)
+hist(train.data$Ht)
+hist(train.data$Wt)
+hist(train.data$BMI)
+hist(train.data$Family_Hist_2)
+hist(train.data$Family_Hist_5)
+```
+
+2. Import test dataset
+```{r}
+test.data <- read.csv("C:/Users/vaish/Documents/DM in R/Project/test.csv")
+
+str(test.data)
+head(test.data)
+```
+
+3. Indentification of outliers (remove or not)?
+```{r}
+#Plotting box plot to check outliers
+#even though I know that there are many outliers 3 standard deviations away, I do not want to remove them just for that reason
+#I did not want to show the box plot of every feature as it is too huge and time consuming, I have provided just a couple of important ones
+
+boxplot(Response ~ Ins_Age, data=train.data, main="Outlier prediction")
+boxplot(Response ~ BMI, data=train.data, main="Outlier prediction")
+boxplot(Response ~ Ht, data=train.data, main="Outlier prediction")
+boxplot(Response ~ Wt, data=train.data, main="Outlier prediction")
+boxplot(Response ~ Family_Hist_2, data=train.data, main="Outlier prediction")
+boxplot(Response ~ Family_Hist_5, data=train.data, main="Outlier prediction")
+boxplot(Response ~ Product_Info_4, data=train.data, main="Outlier prediction")
+```
+
+4. Remove columns that has too much missing value
+```{r}
+ValueMissingVecTrain <- NA
+for (i in (1:127)) ValueMissingVecTrain[i] <- sum(is.na(train.data[,i]))/nrow(train.data)
+inedxMatRemove1 <- which(ValueMissingVecTrain >= 0.55)
+ValueMissingVecTest <- NA
+for (i in (1:127)) ValueMissingVecTest[i] <- sum(is.na(test.data[,i]))/nrow(test.data)
+inedxMatRemove2 <- which(ValueMissingVecTest >= 0.55)
+
+inedxMatRemove1
+inedxMatRemove2
+
+train.data.processed <- train.data[,-inedxMatRemove1]
+test.data.processed <- test.data[,-inedxMatRemove1]
+```
+
+5. Get rows that have NA values
+```{r}
+ValueMissingColTrain <- NA
+for (i in (1:122)) ValueMissingColTrain[i] <- sum(is.na(train.data.processed[,i]))
+inedxMatKeep1 <- which(ValueMissingColTrain > 0)
+
+ValueMissingColText <- NA
+for (i in (1:121)) ValueMissingColText[i] <- sum(is.na(test.data.processed[,i]))
+inedxMatKeep2 <- which(ValueMissingColText > 0)
+
+inedxMatKeep1
+inedxMatKeep2
+
+```
+
+6. Filling NA value in 13 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[13]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,13])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,13])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,13], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,13], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,13], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,13], na.rm = TRUE))
+
+# most value is around 0.06, less than 0.1
+# I chose Average as missing value
+train.data.processed.filling <- train.data.processed
+test.data.processed.filling <- test.data.processed
+train.data.processed.filling[,13][is.na(train.data.processed.filling[,13])] <- 0.078
+test.data.processed.filling[,13][is.na(test.data.processed.filling[,13])] <- 0.078
+```
+
+7. Filling NA value in 16 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[16]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,16])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,16])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,16], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,16], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,16], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,16], na.rm = TRUE))
+percentage_0 <- length(which(train.data.processed[,16] == 0)) / length(which(!is.na(train.data.processed[,16])))
+paste("Percentage of Value 0:", paste(percentage_0*100, "%", sep=''))
+
+# more than 84% of column 16 is 0, I chose 0 as missing value
+train.data.processed.filling[,16][is.na(train.data.processed.filling[,16])] <- 0
+test.data.processed.filling[,16][is.na(test.data.processed.filling[,16])] <- 0
+```
+
+8. Filling NA value in 18 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[18]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,18])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,18])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,18], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,18], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,18], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,18], na.rm = TRUE))
+
+# 18 column is Continuous from 0 to 1, I chose average as missing value
+train.data.processed.filling[,18][is.na(train.data.processed.filling[,18])] <- 0.36
+test.data.processed.filling[,18][is.na(test.data.processed.filling[,18])] <- 0.36
+```
+
+9. Filling NA value in 30 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[30]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,30])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,30])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,30], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,30], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,30], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,30], na.rm = TRUE))
+percentage_0.01 <- length(which(train.data.processed[,30] < 0.01)) / length(which(!is.na(train.data.processed[,30])))
+paste("Percentage of Value less than 0.01:", paste(percentage_0.01*100, "%", sep=''))
+
+# more than 98% of column 30 is less than 0.01, I chose 0 as missing value
+train.data.processed.filling[,30][is.na(train.data.processed.filling[,30])] <- 0
+test.data.processed.filling[,30][is.na(test.data.processed.filling[,30])] <- 0
+```
+
+10. Filling NA value in 35 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[35]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,35])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,35])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,35], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,35], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,35], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,35], na.rm = TRUE))
+
+# MEAN and MEDIAN is similiar, column 35 has Continuous data between 0 to 1
+# I chose median as missing value
+train.data.processed.filling[,35][is.na(train.data.processed.filling[,35])] <- 0.46
+test.data.processed.filling[,35][is.na(test.data.processed.filling[,35])] <- 0.46
+```
+
+11. Filling NA value in 36 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[36]    # Continuous
+paste("Number of missing value:", sum(is.na(train.data.processed[,35])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,36])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,36], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,36], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,36], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,36], na.rm = TRUE))
+
+# MEAN and MEDIAN is similiar, column 36 has Continuous data between 0 to 1
+# I chose median as missing value
+train.data.processed.filling[,36][is.na(train.data.processed.filling[,36])] <- 0.44
+test.data.processed.filling[,36][is.na(test.data.processed.filling[,36])] <- 0.44
+```
+
+12. Filling NA value in 37 Column for train.data.processed
+```{r}
+colnames(train.data.processed)[37]    # Discrete
+paste("Number of missing value:", sum(is.na(train.data.processed[,37])))
+print("--------------------------------------------------------------------------------------")
+str(train.data.processed[,37])
+print("--------------------------------------------------------------------------------------")
+
+paste("MEAN  :", mean(train.data.processed[,37], na.rm = TRUE))
+paste("MEDIAN:", median(train.data.processed[,37], na.rm = TRUE))
+paste("MAX   :", max(train.data.processed[,37], na.rm = TRUE))
+paste("MIN   :", min(train.data.processed[,37], na.rm = TRUE))
+b <- table(train.data.processed[,37])
+paste("MODE  :", as.numeric(names(b)[b == max(b)]))
+
+# Column 37 is discrete, range between 0 to 240
+# I chose to set Mode "1" as the missing value, because its repetition rate is high
+train.data.processed.filling[,37][is.na(train.data.processed.filling[,37])] <- 1
+test.data.processed.filling[,37][is.na(test.data.processed.filling[,37])] <- 1
+```
+
+13. Convert Product_Info_2 from factor to numeric, Remove ID
+```{r}
+train.data.processed.convert <- train.data.processed.filling
+test.data.processed.convert <- test.data.processed.filling
+
+train.data.processed.convert[,3] <- as.numeric(train.data.processed.convert[,3])
+test.data.processed.convert[,3] <- as.numeric(test.data.processed.convert[,3])
+
+train.data.processed.convert <- train.data.processed.convert[,-1]
+test.data.processed.convert <- test.data.processed.convert[,-1]
+
+str(train.data.processed.convert)
+```
+
+14. Create linear regression to make first dimensionality reduction
+```{r}
+# create linear regression model using train.data.processed.convert
+lm.model.reduceDim <- lm(Response ~ ., data=train.data.processed.convert)
+ summary(lm.model.reduceDim)
+
+# select column that p value <= 0.05, creat new dataframe
+p_val <- summary(lm.model.reduceDim)$coef
+select_col <- rownames(data.frame(p_val[p_val[,4] <= 0.05, 4])[,0])
+
+train_dataset_1 <- train.data.processed.convert[,select_col]
+train_dataset<- cbind(train_dataset_1, share = train.data.processed.convert$Response)
+train_dataset$Response <- train_dataset$share
+test_dataset <- test.data.processed.convert[,select_col]
+str(train_dataset)
+```
+
+
+15. Normalizing data
+```{r}
+
+#install.packages("BBmisc")
+library(BBmisc)
+
+train_dataset1 <-normalize(train_dataset, method = "standardize", range = c(0, 1), margin = 1L, on.constant = "quiet")
+
+
+
+```
+
+16. PCA implementation
+```{r}
+train.pca <- prcomp(train_dataset, center = TRUE,scale. = TRUE)
+summary(train.pca)
+
+names(train.pca)
+
+#compute standard deviation of each principal component
+std_dev <- train.pca$sdev
+
+#compute variance
+pr_var <- std_dev^2
+
+#proportion of variance explained
+prop_varex <- pr_var/sum(pr_var)
+
+plot(prop_varex, xlab = "Principal Component",
+             ylab = "Proportion of Variance Explained",
+             type = "b")
+
+cumsum(prop_varex)
+
+
+#I can use from [1:63]
+#as it covers upto 95% of the variance of the required features
+train_data<- train_dataset[1:63]
+train_data<- cbind(train_data, share = train_dataset$Response)
+
+# I updated the training set based on PCA
+
+```
+
+
+17. Creating testing and training dataset
+```{r}
+sample_index = sample(59381, 10000)
+test_data <- train_dataset[sample_index,]
+train_data <- train_dataset[-sample_index,]
+
+test_labels <- train_dataset[sample_index, ]
+train_labels <- train_dataset[-sample_index, ]
+
+```
+
+18. Checking correlation of features
+```{r}
+library(psych)
+pairs.panels(train_data[c("Response","Product_Info_1","Product_Info_2", "Product_Info_3", "Product_Info_4", "Ins_Age", "Ht", "Wt", "BMI")])
+
+```
+
+19. Implementing random forest model
+```{r}
+# Implementing randomforest 
+
+library(h2o)
+h2o.init()
+trainHex <- as.h2o(train_data)
+features <- names(trainHex)[-774]
+rfHex <- h2o.randomForest(x = features,
+                          y = "Response", 
+                          model_id = "rfHex_features",
+                          training_frame = trainHex,
+                          ntrees = 300,
+                          seed = 1126
+)
+
+testHex <- as.h2o(test_data)
+
+# Predicting the model
+predictions<-as.data.frame(h2o.predict(rfHex,testHex))
+
+h2o.performance(rfHex, testHex)
+
+#RMSE is 0.027
+#I could not use confusion matrix for this as the package h2o did not let me do it for this dataset
+#I did not want to change my model just for this reason
+
+```
+
+20. Using SVM model for train_dateset and predicting using test dataset
+```{r}
+
+library(e1071)
+svmmodel <- svm(Response ~ ., data = train_dataset, kernel = "radial", cost = 1, gamma = 0.01, scale = F)
+summary(svmmodel)
+
+#predicting the model
+predictions <- predict(svmmodel, test_data[,-78])
+table(pred = predictions, true = test_data[,78])
+
+```
+
+21. Calculate the Performance of SVM model using accuracy function
+```{r}
+actualValue <- as.integer(test_data[,78])
+predictValue <- as.integer(data.frame(predictions)[,1])
+
+library("forecast")
+accuracy(actualValue,predictValue)
+
+# RMSE is 0.72478
+# This is a fairly good accuracy
+
+#evaluation using confusion matrix
+caret::confusionMatrix(data= as.factor(actualValue), reference= as.factor(predictValue))
+#Accuracy is 0.52
+
+```
+
+22. Implementing Decision tree model
+```{r}
+library(rpart)
+dTree <-  rpart(Response ~ ., data = train_data, method = "anova",cp=0.01)
+# Prune the tree
+dTree
+printcp(dTree) 
+plotcp(dTree) 
+
+# Predict the target_data variable using test dataset
+myPre <- predict(dTree, test_data)
+
+# evaluate performance
+ModelMetrics::rmse(myPre, test_data$Response)
+#rmse is 0.2512
+
+actualValue <- as.integer(test_data[,78])
+predictValue <- as.integer(data.frame(myPre)[,1])
+
+#Confusion matrix
+caret::confusionMatrix(data= as.factor(predictValue), reference= as.factor(actualValue))
+
+#Accuracy is 0.86
+#This is a pretty good accuracy 
+#Hence decision tree is actually performing better than svm
+
+# Round the predict result
+pResult <- round(myPre, digits = 0) 
+pResult[pResult<1] <- 1
+pResult[pResult>8] <- 8
+
+library(ModelMetrics)
+confusionMatrix (pResult, as.integer(test_data$Response))
+library(rpart.plot)
+rpart.plot(dTree) # Print the decision tree plot
+mean(myPre == test_data$Response)
+
+```
+Model Evaluation
+
+
+Evaluating model performace
+I could not find a better way to evaluate because of the random forest model
+It was not possible to use a confusion matrix on random forest so I decided to go with RMSE even though it makes very less sense to use it for a classification model
+
+The RMSE for all the models are:
+
+RMSE:
+  
+Random forest	 SVM	  Decision tree
+0.02	         0.71	  0.25
+
+  
+Average accuracy from confusion matrix:
+
+SVM	  Decision tree
+0.52	0.86
+
+This shows that the random forest has the best accuracy. 
+According to confusion matrix the decision tree performed better.
+
+
+23. K fold cross validation
+```{r}
+
+#Validation for decision tree
+library(caret)
+folds <- createFolds(train_data$Response, k = 10)
+
+str(folds)
+
+data01_test <- train_dataset[folds$Fold01, ]
+data01_train <- train_dataset[-folds$Fold01, ]
+
+library(C50)
+
+library(irr)
+
+set.seed(123)
+folds <- createFolds(train_data$Response, k = 10)
+
+cv_results <- lapply(folds, function(x) {
+train_data <- train_dataset[-x, ]
+test_data <- train_dataset[x, ]
+model <- rpart(Response ~ ., data = train_data)
+pred <- predict(dTree, test_data)
+actual <- test_data$Response
+kappa <- kappa2(data.frame(actual, pred))$value
+return(kappa)
+})
+
+str(cv_results)
+
+mean(unlist(cv_results))
+
+#This kappa statistic is fairly high, corresponding to the interpretation scale, which suggests that the decision tree  model performs pretty good and its not just a random chance that the output is right
+
+
+#Model Evaluation for SVM
+library(caret)
+ctrl <- trainControl(method="repeatedcv", number=10, repeats=3)
+
+random_ids <- order(runif(59381))
+test_data_1 <- train_dataset[random_ids[1:39381],]
+train_data_1 <- train_dataset[random_ids[39382:49381],]
+valid_data_1 <- train_dataset[random_ids[49382:59381],]
+
+
+
+train.data.final <- train_data_1
+train.data.final[,"Response"] <- train_data_1[,"Response"]
+train.data.final[,"Response"][train.data.final[,"Response"]==1] <- "a"
+train.data.final[,"Response"][train.data.final[,"Response"]==2] <- "b"
+train.data.final[,"Response"][train.data.final[,"Response"]==3] <- "c"
+train.data.final[,"Response"][train.data.final[,"Response"]==4] <- "d"
+train.data.final[,"Response"][train.data.final[,"Response"]==5] <- "e"
+train.data.final[,"Response"][train.data.final[,"Response"]==6] <- "f"
+train.data.final[,"Response"][train.data.final[,"Response"]==7] <- "g"
+train.data.final[,"Response"][train.data.final[,"Response"]==8] <- "h"
+
+test.data.final <- test_data_1
+test.data.final[,"Response"] <- test_data_1[,"Response"]
+test.data.final[,"Response"][test.data.final[,"Response"]==1] <- "a"
+test.data.final[,"Response"][test.data.final[,"Response"]==2] <- "b"
+test.data.final[,"Response"][test.data.final[,"Response"]==3] <- "c"
+test.data.final[,"Response"][test.data.final[,"Response"]==4] <- "d"
+test.data.final[,"Response"][test.data.final[,"Response"]==5] <- "e"
+test.data.final[,"Response"][test.data.final[,"Response"]==6] <- "f"
+test.data.final[,"Response"][test.data.final[,"Response"]==7] <- "g"
+test.data.final[,"Response"][test.data.final[,"Response"]==8] <- "h"
+
+valid.data.final <- valid_data_1
+valid.data.final[,"Response"] <- valid_data_1[,"Response"]
+valid.data.final[,"Response"][valid.data.final[,"Response"]==1] <- "a"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==2] <- "b"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==3] <- "c"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==4] <- "d"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==5] <- "e"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==6] <- "f"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==7] <- "g"
+valid.data.final[,"Response"][valid.data.final[,"Response"]==8] <- "h"
+
+
+#train_set_cv <- train_set_pca
+#train_set_cv$Winner <- ifelse(train_set_cv$Winner > 0,'Y','N')
+
+#val_set_cv <- val_set_pca
+#val_set_cv$Winner <- ifelse(val_set_cv$Winner > 0,'Y','N')
+
+#test_set_cv <- test_set_pca
+#test_set_cv$Winner <- ifelse(test_set_cv$Winner > 0,'Y','N')
+
+#sv_model <- caret::train(train.data.final, #as.factor(train.data.final$Response),method='lssvmPoly',trControl=ctrl,tuneLength=3)
+
+#pred_svm <- predict(sv_cmodel,valid.data.final)
+#caret::confusionMatrix(pred_svm, as.factor(valid.data.final$Response))
+
+
+
+
+```
+
+24. Rshiny
+
+```{r}
+library(shiny)
+
+ui <- basicPage(
+  plotOutput("plot1", click = "plot_click"),
+  verbatimTextOutput("info")
+)
+
+server <- function(input, output) {
+  output$plot1 <- renderPlot({
+    rpart.plot(dTree)
+  })
+  
+  output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+}
+
+
+
+shinyApp(ui, server)
+
+
+```
